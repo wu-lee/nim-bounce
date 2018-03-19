@@ -1,7 +1,14 @@
 import sdl2
 import sdl2.gfx
+import random
+import times
+
 type SDLException = object of Exception
 
+const
+  gravity = 1
+  numBalls = 30
+  
 type
   Input {.pure.} = enum none, left, right, fire, click, quit
 
@@ -15,19 +22,25 @@ type
   Game = ref object
     inputs: array[Input, bool]
     renderer: RendererPtr
-    ball: Ball
+    ball: array[numBalls, Ball]
 
+var
+  rseq = initRand(getTime().toUnix)
+    
 const
   topLeft = Vector[int16](x:0,y:0)
   botRight = Vector[int16](x:1000,y:500)
-  initialVel = Vector[float](x:5,y:0)
-  gravity = 1
+  maxInitialVel = Vector[float](x:20,y:20)
+
+proc randomVec[T](xs, ys: HSlice[T, T]): Vector[T] =
+  result = Vector[T](x: rand(rseq, xs), y: rand(rseq, ys))
   
 proc newGame(renderer: RendererPtr): Game =
   new result
   result.renderer = renderer
-  result.ball.vel = initialVel
-
+  for ix in low(result.ball)..high(result.ball):
+    result.ball[ix].vel = randomVec(-maxInitialVel.x..maxInitialVel.x, -maxInitialVel.y..maxInitialVel.y)
+  
 template sdlFailIf(cond: typed, reason: string) =
   if cond: raise SDLException.newException(
     reason & ", SDL error: " & $getError())
@@ -76,8 +89,9 @@ proc render(game: Game) =
   # Draw over all drawings of the last frame with the default color
   game.renderer.clear()
 
-  moveBall(game.ball, topLeft.x, topLeft.y, botRight.x, botRight.y)
-  game.renderer.aaCircleRGBA(int16(game.ball.pos.x), int16(game.ball.pos.y), 10, r = 1, g = 2, b = 3, a= 255)
+  for ix in low(game.ball)..high(game.ball):
+    moveBall(game.ball[ix], topLeft.x, topLeft.y, botRight.x, botRight.y)
+    game.renderer.aaCircleRGBA(int16(game.ball[ix].pos.x), int16(game.ball[ix].pos.y), 10, r = 1, g = 2, b = 3, a= 255)
 
   # Show the result on screen
   game.renderer.present()
