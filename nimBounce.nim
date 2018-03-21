@@ -8,9 +8,12 @@ type SDLException = object of Exception
 const
   gravity = 1
   numBalls = 30
+  radius = 10
   
 type
   Input {.pure.} = enum none, left, right, fire, click, quit
+  Color = enum red, green, blue
+  RGB = array[Color, byte]
 
   Vector*[T] = object
     x*, y*: T
@@ -18,6 +21,7 @@ type
   Ball = object
     pos*: Vector[float]
     vel*: Vector[float]
+    col*: RGB
 
   Game = ref object
     inputs: array[Input, bool]
@@ -34,12 +38,18 @@ const
 
 proc randomVec[T](xs, ys: HSlice[T, T]): Vector[T] =
   result = Vector[T](x: rand(rseq, xs), y: rand(rseq, ys))
+
+proc randomRGB(): RGB =
+  for col in Color:
+    result[col] = byte(rand(rseq, 0..255))
   
 proc newGame(renderer: RendererPtr): Game =
   new result
   result.renderer = renderer
   for ix in low(result.ball)..high(result.ball):
-    result.ball[ix].vel = randomVec(-maxInitialVel.x..maxInitialVel.x, -maxInitialVel.y..maxInitialVel.y)
+    template ball(): untyped = result.ball[ix]
+    ball.vel = randomVec(-maxInitialVel.x..maxInitialVel.x, -maxInitialVel.y..maxInitialVel.y)
+    ball.col = randomRGB()
   
 template sdlFailIf(cond: typed, reason: string) =
   if cond: raise SDLException.newException(
@@ -90,8 +100,9 @@ proc render(game: Game) =
   game.renderer.clear()
 
   for ix in low(game.ball)..high(game.ball):
-    moveBall(game.ball[ix], topLeft.x, topLeft.y, botRight.x, botRight.y)
-    game.renderer.aaCircleRGBA(int16(game.ball[ix].pos.x), int16(game.ball[ix].pos.y), 10, r = 1, g = 2, b = 3, a= 255)
+    template ball(): untyped = game.ball[ix]
+    moveBall(ball, topLeft.x, topLeft.y, botRight.x, botRight.y)
+    game.renderer.filledCircleRGBA(int16(ball.pos.x), int16(ball.pos.y), radius, r = ball.col[red], g = ball.col[green], b = ball.col[blue], a = 255)
 
   # Show the result on screen
   game.renderer.present()
