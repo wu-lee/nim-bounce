@@ -9,6 +9,7 @@ const
   gravity = 1
   numBalls = 30
   radius = 10
+  resistance = 0.99
   
 type
   Input {.pure.} = enum none, left, right, fire, click, quit
@@ -91,6 +92,9 @@ proc moveBall(ball: var Ball; left, top, right, bottom: int16) =
     ball.pos.y = float(bottom)
     ball.vel.y = -ball.vel.y
   ball.vel.y += gravity
+  ball.vel.x *= resistance
+  ball.vel.y *= resistance
+  
     
       
 proc render(game: Game) =
