@@ -23,6 +23,7 @@ type
     pos*: Vector[float]
     vel*: Vector[float]
     col*: RGB
+    radius: float
 
   Game = ref object
     inputs: array[Input, bool]
@@ -51,6 +52,7 @@ proc newGame(renderer: RendererPtr): Game =
     template ball(): untyped = result.ball[ix]
     ball.vel = randomVec(-maxInitialVel.x..maxInitialVel.x, -maxInitialVel.y..maxInitialVel.y)
     ball.col = randomRGB()
+    ball.radius = radius
   
 template sdlFailIf(cond: typed, reason: string) =
   if cond: raise SDLException.newException(
@@ -106,7 +108,7 @@ proc render(game: Game) =
   for ix in low(game.ball)..high(game.ball):
     template ball(): untyped = game.ball[ix]
     moveBall(ball, topLeft.x, topLeft.y, botRight.x, botRight.y)
-    game.renderer.filledCircleRGBA(int16(ball.pos.x), int16(ball.pos.y), radius, r = ball.col[red], g = ball.col[green], b = ball.col[blue], a = 255)
+    game.renderer.filledCircleRGBA(int16(ball.pos.x), int16(ball.pos.y), ball.radius.int16, r = ball.col[red], g = ball.col[green], b = ball.col[blue], a = 255)
 
   # Show the result on screen
   game.renderer.present()
